@@ -15,11 +15,12 @@ class Tree {
 	struct Node {
 		K key;
 		V value;
+		bool highlight;
 		int height;
 		Node* left;
 		Node* right;
 		Node(const K& k, const V& val, Node* lft, Node* rgt, int h = 0)
-			:key(k), value(val), left(lft), right(rgt), height(h) {}
+			:key(k), value(val), left(lft), right(rgt), height(h), highlight(false) {}
 	};
 
 public:
@@ -30,18 +31,70 @@ public:
 	void preorder() {
 		preorder(root); 
 	}
+	Node*& getRoot() {
+		return root;
+	}
 	void print() {
-		ofstream salida;
-		salida.open("graph.gv",ios::out);
-		salida<<"graph {"<<endl;
-
-		printPri(root,salida);
-
-		salida<<"}"<<endl;
-		salida.close();
+		string filename = "graph.gv";
 		
+		ofstream myfile;
+		myfile.open(filename);
+		myfile << "digraph AVL {\n";
+		myfile <<  "fontcolor=\"navy\";\n";
+		myfile <<  "fontsize=20;\n";
+		myfile <<  "labelloc=\"t\";\n";
+		myfile <<  "label=\"UNSA\nAVL Tree\"\n";
+
+		char* str = (char*)malloc(sizeof(char)*4096);
+		printPri(root,1,str,myfile);
+		free(str);
+		myfile << "}";
 	}
 
+	bool search(Node*& root, const K& key)
+	{
+		// If root is NULL
+		if (root == NULL)
+			return false;
+	
+		// If found, return true
+		else if (root->key == key) {
+			root->highlight = true;
+			return true;
+		}
+		// Recur to the left subtree if
+		// the current node's value is
+		// greater than key
+		else if (root->key > key) {
+			bool val = search(root->left, key);
+			return val;
+		}
+	
+		// Otherwise, recur to the
+		// right subtree
+		else {
+			bool val = search(root->right, key);
+			return val;
+		}
+	}
+
+	K findMaximum(Node*& spot) {
+		if (spot->right == nullptr){
+            spot->highlight = true;
+			return spot->key;
+		}
+		
+		return findMaximum(spot->right);
+	}
+
+	K findMinimum(Node*& spot) {
+		if (spot->left == nullptr){
+            spot->highlight = true;
+			return spot->key;
+		}
+		
+		return findMinimum(spot->left);
+	}
 private:
 	//Metodos privados
 	void insert(const K& key, const V& value, Node*& spot);
@@ -55,7 +108,8 @@ private:
 	void balance(Node*& spot);
 	int height(Node* spot) const;
 	void preorder(Node* root);
-	void printPri(Node* root,ofstream& salida);
+	void printPri(Node* node, int position, char* stringBuilder, ofstream& salida);
+	
 	static const int ALOWED_IMBALANCE = 1;
 	//variables privadas
 	Node* root;
@@ -149,6 +203,8 @@ typename Tree<K, V>::Node* Tree<K, V>::findMin(Node*& spot) const {
 	return findMin(spot->left);
 }
 
+
+
 template <typename K, typename V>
 void Tree<K, V>::balance(Node*& spot) {
 	if (spot != nullptr) {
@@ -219,18 +275,23 @@ void Tree<K, V>::preorder(Node* p) {
 }
 
 template <typename K, typename V>
-void Tree<K, V>::printPri(Node* p,ofstream& salida) {
-	if (p == nullptr)
-		return;
-	if(p->left!=nullptr){
-		salida << p->key << " -- " << p->left->key << ";\n";
+void Tree<K, V>::printPri(Node* node, int position, char* stringBuilder, ofstream& salida) {
+	sprintf(stringBuilder, "%d [label=\"%d\", shape=circle, color=%s];\n",position, node->key, node->highlight == true ? "red" : "black");
+	salida << stringBuilder;
+	int left = 2*position;
+	if((node->left) != nullptr){
+		sprintf(stringBuilder, "%d -> %d;\n",position,left);
+		salida << stringBuilder;
+		printPri(node->left,left,stringBuilder,salida);
 	}
-	if(p->right!=nullptr){
-		salida << p->key << " -- " << p->right->key << ";\n";
+	int right = left + 1;
+	if((node->right) != nullptr){
+		sprintf(stringBuilder, "%d -> %d;\n",position,right);
+		salida << stringBuilder;
+		printPri(node->right,right,stringBuilder,salida);
 	}
-	printPri(p->right,salida);
-	printPri(p->left,salida);
 }
+
 
 int main()
 {
@@ -238,10 +299,22 @@ int main()
 	Tree<int, int> arbol;
 	int valor=0;
 
-	while(opcion!=3){
+    arbol.insert(12,100);
+    arbol.insert(6,100);
+    arbol.insert(2,100);
+    arbol.insert(3,100);
+    arbol.insert(8,100);
+    arbol.insert(15,100);
+    arbol.insert(29,100);
+    arbol.insert(32,100);
+
+	while(opcion!=6){
 		cout<<"1) Insertar: "<<endl;
 		cout<<"2) Eliminar: "<<endl;
-		cout<<"3) Salir: "<<endl;
+		cout<<"3) Maximo: "<<endl;
+		cout<<"4) Minimo: "<<endl;
+		cout<<"5) Busqueda: "<<endl;
+		cout<<"6) Salir: "<<endl;
 		cout<<endl;
 		cout<<"Ingresa tu opcion: ";
 		cin>>opcion;
@@ -265,6 +338,27 @@ int main()
 				break;
 			}
 			case 3:{
+				cout<<"El maximo: "<<arbol.findMaximum(arbol.getRoot())<<endl;
+                arbol.print();
+				system("dot -Tps graph.gv -o graph.ps");
+				break;
+			}
+			case 4:{
+				cout<<"El minimo: "<<arbol.findMinimum(arbol.getRoot())<<endl;
+                arbol.print();
+				system("dot -Tps graph.gv -o graph.ps");
+				break;
+			}
+			case 5:{
+				cout<<"Ingrese el valor a buscar: "<<endl;
+				cin>>valor;
+				cout<<endl;
+				cout<<arbol.search(arbol.getRoot(), valor)<<endl;
+				arbol.print();
+				system("dot -Tps graph.gv -o graph.ps");
+				break;
+			}
+			case 6:{
 				break;
 			}
 			default:{
