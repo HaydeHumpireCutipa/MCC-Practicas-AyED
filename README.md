@@ -10,3 +10,6 @@ Integrantes:
 Prácticas:
 * Práctica 01 - Algoritmos de Ordenamiento
 * Práctica 02 - Estructura de Datos
+* Práctica 03 - Quadtree
+* Práctica 04 - Kdtree
+* Trabajo Final 
